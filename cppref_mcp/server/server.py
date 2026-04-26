@@ -16,6 +16,9 @@ mcp = FastMCP('cppreference',
               instructions='Provides tools for searching and retrieving documentation for the C++ programming language from cppreference.com.')
 markitdown = MarkItDown()
 
+search_cppreference_cache = {}
+get_cppreference_page_cache = {}
+
 
 def setup_logging(log_dir: str) -> None:
   '''
@@ -42,6 +45,12 @@ async def search_cppreference(query: str) -> str:
   Searches the cppreference.com website for the specified query.  Returns a list of up to five
   URLs of pages containing the search results.
   '''
+
+  query: str = query.strip()
+
+  if query in search_cppreference_cache:
+    return search_cppreference_cache[query]
+
   logging.info(f'Searching cppreference for: {query}')
   search_url = urljoin(base_url, 'index.php')
   params = {
@@ -77,7 +86,8 @@ async def search_cppreference(query: str) -> str:
         break
 
     logging.info(f'Found {len(urls)} results for query: {query}')
-    return json.dumps(urls)
+    search_cppreference_cache[query] = json.dumps(urls)
+    return search_cppreference_cache[query]
 
 
 @mcp.tool()
@@ -86,12 +96,18 @@ async def get_cppreference_page(url: str) -> str:
   Retrieves the specified cppreference.com page and returns it as markdown. Ensures only pages
   from cppreference.com are retrieved.
   '''
+
+  url: str = url.strip()
+
   logging.info(f'Retrieving page: {url}')
   parsed_base_url = urlparse(base_url)
   parsed_url = urlparse(url)
   if parsed_url.netloc != parsed_base_url.netloc:
     logging.error(f'Invalid domain: {parsed_url.netloc}')
     return f'Error: Only pages from {parsed_base_url} are allowed.'
+
+  if url in get_cppreference_page_cache:
+    return get_cppreference_page_cache[url]
 
   async with httpx.AsyncClient() as client:
     response = await client.get(url, follow_redirects=True,
@@ -112,7 +128,8 @@ async def get_cppreference_page(url: str) -> str:
         html_stream,
         file_extension='.html',
       )
-      return result.text_content
+      get_cppreference_page_cache[url] = result.text_content
+      return get_cppreference_page_cache[url]
     except Exception as e:
       logging.exception(f'Error converting HTML to Markdown: {e}')
       return f'Error: Failed to convert page to Markdown: {str(e)}'
