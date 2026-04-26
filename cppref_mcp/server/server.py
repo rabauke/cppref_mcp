@@ -51,7 +51,7 @@ async def search_cppreference(query: str) -> str:
   if query in search_cppreference_cache:
     return search_cppreference_cache[query]
 
-  logging.info(f'Searching cppreference for: {query}')
+  logging.info('Searching cppreference for: %s', query)
   search_url = urljoin(base_url, 'index.php')
   params = {
     'title': 'Special:Search',
@@ -70,7 +70,7 @@ async def search_cppreference(query: str) -> str:
     if not search_results:
       final_url = str(response.url)
       if 'Special:Search' not in final_url and 'index.php' not in final_url:
-        logging.info(f'Directly redirected to: {final_url}')
+        logging.info('Directly redirected to: %s', final_url)
         return json.dumps([final_url])
 
     urls = []
@@ -85,7 +85,7 @@ async def search_cppreference(query: str) -> str:
       if len(urls) >= 5:
         break
 
-    logging.info(f'Found {len(urls)} results for query: {query}')
+    logging.info('Found %d results for query: %s', len(urls), query)
     search_cppreference_cache[query] = json.dumps(urls)
     return search_cppreference_cache[query]
 
@@ -99,11 +99,11 @@ async def get_cppreference_page(url: str) -> str:
 
   url: str = url.strip()
 
-  logging.info(f'Retrieving page: {url}')
+  logging.info('Retrieving page: %s', url)
   parsed_base_url = urlparse(base_url)
   parsed_url = urlparse(url)
   if parsed_url.netloc != parsed_base_url.netloc:
-    logging.error(f'Invalid domain: {parsed_url.netloc}')
+    logging.error('Invalid domain: %s', parsed_url.netloc)
     return f'Error: Only pages from {parsed_base_url} are allowed.'
 
   if url in get_cppreference_page_cache:
@@ -113,7 +113,7 @@ async def get_cppreference_page(url: str) -> str:
     response = await client.get(url, follow_redirects=True,
                                 timeout=10.0)
     if response.status_code != 200:
-      logging.error(f'Failed to retrieve page: {response.status_code}')
+      logging.error('Failed to retrieve page: %d', response.status_code)
       return f'Error: Failed to retrieve page (Status: {response.status_code})'
 
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -131,7 +131,7 @@ async def get_cppreference_page(url: str) -> str:
       get_cppreference_page_cache[url] = result.text_content
       return get_cppreference_page_cache[url]
     except Exception as e:
-      logging.exception(f'Error converting HTML to Markdown: {e}')
+      logging.exception('Error converting HTML to Markdown: %s', e)
       return f'Error: Failed to convert page to Markdown: {str(e)}'
 
 
