@@ -101,7 +101,7 @@ async def get_cppreference_page(url: str) -> str:
     soup = BeautifulSoup(response.text, 'html.parser')
     for a_tag in soup.find_all('a'):
       url = a_tag.get('href')
-      if url and (url.startswith('/c/') or url.startswith('/cpp/')):
+      if url and (url.startswith('/c/') or url.startswith('/cpp/') or url == '/c' or url == '/cpp'):
         a_tag['href'] = urljoin(base_url, url)
 
     # Save to a temporary file for MarkItDown if needed, or use content MarkItDown.convert can
