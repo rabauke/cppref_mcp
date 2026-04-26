@@ -14,7 +14,6 @@ from cache import LRUCache
 
 
 BASE_URL = 'https://cppreference.com'
-MAX_CACHE_SIZE = 100
 HTTP_TIMEOUT = 10.0
 MAX_SEARCH_RESULTS = 5
 
@@ -26,8 +25,8 @@ mcp = FastMCP(
 )
 markitdown = MarkItDown()
 
-search_cache = LRUCache(MAX_CACHE_SIZE)
-page_cache = LRUCache(MAX_CACHE_SIZE)
+search_cache = LRUCache(200)
+page_cache = LRUCache(50)
 
 
 def setup_logging(log_dir: str) -> None:
