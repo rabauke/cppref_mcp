@@ -2,15 +2,15 @@ import argparse
 import json
 import logging
 import os
-from collections import OrderedDict
 from io import BytesIO
 from logging.handlers import RotatingFileHandler
-from typing import Annotated, Optional
+from typing import Annotated
 from urllib.parse import urlparse, urljoin
 from bs4 import BeautifulSoup
 from fastmcp import FastMCP
 import httpx
 from markitdown import MarkItDown
+from cache import LRUCache
 
 
 BASE_URL = 'https://cppreference.com'
@@ -25,26 +25,6 @@ mcp = FastMCP(
   version='0.1.0'
 )
 markitdown = MarkItDown()
-
-
-class LRUCache:
-  def __init__(self, capacity: int):
-    self.cache = OrderedDict()
-    self.capacity = capacity
-
-  def get(self, key: str) -> Optional[str]:
-    if key not in self.cache:
-      return None
-    self.cache.move_to_end(key)
-    return self.cache[key]
-
-  def put(self, key: str, value: str):
-    if key in self.cache:
-      self.cache.move_to_end(key)
-    self.cache[key] = value
-    if len(self.cache) > self.capacity:
-      self.cache.popitem(last=False)
-
 
 search_cache = LRUCache(MAX_CACHE_SIZE)
 page_cache = LRUCache(MAX_CACHE_SIZE)
