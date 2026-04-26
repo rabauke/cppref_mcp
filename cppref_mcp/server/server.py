@@ -9,11 +9,14 @@ import httpx
 from bs4 import BeautifulSoup
 from fastmcp import FastMCP
 from markitdown import MarkItDown
+from typing import Annotated
 
 
 base_url = 'https://cppreference.com'
 mcp = FastMCP('cppreference',
-              instructions='Provides tools for searching and retrieving documentation for the C++ programming language from cppreference.com.')
+              instructions='Provides tools for searching and retrieving documentation for the '
+                           'C++ programming language from cppreference.com.',
+              version='0.1.0')
 markitdown = MarkItDown()
 
 search_cppreference_cache = {}
@@ -39,8 +42,11 @@ def setup_logging(log_dir: str) -> None:
   logger.addHandler(handler)
 
 
-@mcp.tool()
-async def search_cppreference(query: str) -> str:
+@mcp.tool(name='search_cppreference',
+          annotations={'title': 'Search cppreference.com',
+                       'readOnlyHint': True,
+                       'idempotentHint': True})
+async def search_cppreference(query: Annotated[str, 'query string for search cppreference.com']) -> str:
   '''
   Searches the cppreference.com website for the specified query.  Returns a list of up to five
   URLs of pages containing the search results.
@@ -91,8 +97,11 @@ async def search_cppreference(query: str) -> str:
     return search_cppreference_cache[query]
 
 
-@mcp.tool()
-async def get_cppreference_page(url: str) -> str:
+@mcp.tool(name='get_cppreference_page',
+          annotations={'title': 'Get page from cppreference.com',
+                       'readOnlyHint': True,
+                       'idempotentHint': True})
+async def get_cppreference_page(url: Annotated[str, 'url of a page from cppreference.com']) -> str:
   '''
   Retrieves the specified cppreference.com page and returns it as Markdown. Ensures only pages
   from cppreference.com are retrieved.
