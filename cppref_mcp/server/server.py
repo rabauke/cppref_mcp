@@ -2,12 +2,14 @@ import argparse
 import json
 import logging
 import os
+from io import BytesIO
 from logging.handlers import RotatingFileHandler
 from urllib.parse import urlparse, urljoin
 import httpx
 from bs4 import BeautifulSoup
 from fastmcp import FastMCP
 from markitdown import MarkItDown
+
 
 base_url = 'https://cppreference.com'
 mcp = FastMCP('cppreference',
@@ -104,23 +106,12 @@ async def get_cppreference_page(url: str) -> str:
       if url and (url.startswith('/c/') or url.startswith('/cpp/') or url == '/c' or url == '/cpp'):
         a_tag['href'] = urljoin(base_url, url)
 
-    # Save to a temporary file for MarkItDown if needed, or use content MarkItDown.convert can
-    # take a file-like object or path. For now, let's use a simple approach if MarkItDown
-    # supports it. Actually MarkItDown.convert(url) might work but we want to ensure domain
-    # validation Let's use the content we already fetched.
-
     try:
-      # MarkItDown doesn't easily support direct HTML string conversion
-      # in all versions without a file
-      # We'll write to a temp file and convert it.
-      import tempfile
-      with tempfile.NamedTemporaryFile(suffix='.html',
-                                       delete=False) as temp_file:
-        temp_file.write(str(soup).encode('utf-8'))
-        temp_path = temp_file.name
-
-      result = markitdown.convert(temp_path)
-      os.unlink(temp_path)
+      html_stream = BytesIO(str(soup).encode('utf-8'))
+      result = markitdown.convert_stream(
+        html_stream,
+        file_extension='.html',
+      )
       return result.text_content
     except Exception as e:
       logging.exception(f'Error converting HTML to Markdown: {e}')
