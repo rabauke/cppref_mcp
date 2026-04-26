@@ -49,6 +49,7 @@ async def search_cppreference(query: str) -> str:
   query: str = query.strip()
 
   if query in search_cppreference_cache:
+    logging.info('Using cached results for query: %s', query)
     return search_cppreference_cache[query]
 
   logging.info('Searching cppreference for: %s', query)
@@ -99,7 +100,6 @@ async def get_cppreference_page(url: str) -> str:
 
   url: str = url.strip()
 
-  logging.info('Retrieving page: %s', url)
   parsed_base_url = urlparse(base_url)
   parsed_url = urlparse(url)
   if parsed_url.netloc != parsed_base_url.netloc:
@@ -107,8 +107,10 @@ async def get_cppreference_page(url: str) -> str:
     return f'Error: Only pages from {parsed_base_url} are allowed.'
 
   if url in get_cppreference_page_cache:
+    logging.info('Using cached results for page: %s', url)
     return get_cppreference_page_cache[url]
 
+  logging.info('Retrieving page: %s', url)
   async with httpx.AsyncClient() as client:
     response = await client.get(url, follow_redirects=True,
                                 timeout=10.0)
