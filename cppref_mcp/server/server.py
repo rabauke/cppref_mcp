@@ -3,26 +3,22 @@ import json
 import logging
 import os
 from logging.handlers import RotatingFileHandler
-from typing import List
-from urllib.parse import urlparse
-from urllib.parse import urljoin
-
+from urllib.parse import urlparse, urljoin
 import httpx
 from bs4 import BeautifulSoup
 from fastmcp import FastMCP
 from markitdown import MarkItDown
 
 base_url = 'https://cppreference.com'
-
-# Initialize FastMCP server
-mcp = FastMCP('cppreference')
-
-# Initialize MarkItDown
+mcp = FastMCP('cppreference',
+              instructions='Provides tools for searching and retrieving documentation for the C++ programming language from cppreference.com.')
 markitdown = MarkItDown()
 
 
 def setup_logging(log_dir: str) -> None:
-  '''Sets up logging with rotation.'''
+  '''
+  Sets up logging with rotation.
+  '''
   if not os.path.exists(log_dir):
     os.makedirs(log_dir)
 
