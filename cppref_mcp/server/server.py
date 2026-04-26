@@ -94,7 +94,7 @@ async def search_cppreference(query: str) -> str:
 @mcp.tool()
 async def get_cppreference_page(url: str) -> str:
   '''
-  Retrieves the specified cppreference.com page and returns it as markdown. Ensures only pages
+  Retrieves the specified cppreference.com page and returns it as Markdown. Ensures only pages
   from cppreference.com are retrieved.
   '''
 
