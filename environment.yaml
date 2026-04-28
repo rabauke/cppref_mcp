@@ -1,0 +1,7 @@
+name: cppref-mcp
+channels:
+  - conda-forge
+dependencies:
+  - fastmcp
+  - markitdown
+  - python=3.13
