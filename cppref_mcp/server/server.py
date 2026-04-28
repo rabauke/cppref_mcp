@@ -117,7 +117,7 @@ async def search_cppreference(
         break
 
     logging.info('Found %d results for query: %s', len(urls), query)
-    result = json.dumps(urls)
+    result = json.dumps({'query': query, 'result_urls': urls})
     search_cache.put(query, result)
     return result
 
