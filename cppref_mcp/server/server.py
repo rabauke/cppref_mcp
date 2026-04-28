@@ -18,10 +18,10 @@ HTTP_TIMEOUT = 10.0
 MAX_SEARCH_RESULTS = 5
 
 mcp = FastMCP(
-  'cppreference',
-  instructions='Provides tools for searching and retrieving documentation for the '
-               'C++ programming language from cppreference.com.',
-  version='0.1.0'
+    'cppreference',
+    instructions='Provides tools for searching and retrieving documentation for the '
+                 'C++ programming language from cppreference.com.',
+    version='0.1.0'
 )
 markitdown = MarkItDown()
 
@@ -38,12 +38,12 @@ def setup_logging(log_dir: str) -> None:
 
   log_file = os.path.join(log_dir, 'cppref_mcp.log')
   handler = RotatingFileHandler(
-    log_file,
-    maxBytes=10 * 1024 * 1024,
-    backupCount=5
+      log_file,
+      maxBytes=10 * 1024 * 1024,
+      backupCount=5
   )
   formatter = logging.Formatter(
-    '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+      '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
   )
   handler.setFormatter(formatter)
 
@@ -53,15 +53,15 @@ def setup_logging(log_dir: str) -> None:
 
 
 @mcp.tool(
-  name='search_cppreference',
-  annotations={
-    'title': 'Search cppreference.com',
-    'readOnlyHint': True,
-    'idempotentHint': True
-  }
+    name='search_cppreference',
+    annotations={
+      'title': 'Search cppreference.com',
+      'readOnlyHint': True,
+      'idempotentHint': True,
+    }
 )
 async def search_cppreference(
-  query: Annotated[str, 'query string for search cppreference.com']
+    query: Annotated[str, 'query string for search cppreference.com'],
 ) -> str:
   """
   Searches the cppreference.com website for the specified query.
@@ -83,8 +83,8 @@ async def search_cppreference(
 
   try:
     async with httpx.AsyncClient(
-      timeout=HTTP_TIMEOUT,
-      follow_redirects=True
+        timeout=HTTP_TIMEOUT,
+        follow_redirects=True
     ) as client:
       response = await client.get(search_url, params=params)
 
@@ -127,15 +127,15 @@ async def search_cppreference(
 
 
 @mcp.tool(
-  name='get_cppreference_page',
-  annotations={
-    'title': 'Get page from cppreference.com',
-    'readOnlyHint': True,
-    'idempotentHint': True
-  }
+    name='get_cppreference_page',
+    annotations={
+      'title': 'Get page from cppreference.com',
+      'readOnlyHint': True,
+      'idempotentHint': True,
+    }
 )
 async def get_cppreference_page(
-  url: Annotated[str, 'url of a page from cppreference.com']
+    url: Annotated[str, 'url of a page from cppreference.com'],
 ) -> str:
   """
   Retrieves the specified cppreference.com page and returns it as Markdown.
@@ -159,8 +159,8 @@ async def get_cppreference_page(
 
   try:
     async with httpx.AsyncClient(
-      timeout=HTTP_TIMEOUT,
-      follow_redirects=True
+        timeout=HTTP_TIMEOUT,
+        follow_redirects=True
     ) as client:
       response = await client.get(url)
 
@@ -173,17 +173,17 @@ async def get_cppreference_page(
     for a_tag in soup.find_all('a'):
       href = a_tag.get('href')
       if href and (
-        href.startswith('/c/')
-        or href.startswith('/cpp/')
-        or href == '/c'
-        or href == '/cpp'
+          href.startswith('/c/')
+          or href.startswith('/cpp/')
+          or href == '/c'
+          or href == '/cpp'
       ):
         a_tag['href'] = urljoin(BASE_URL, href)
 
     html_stream = BytesIO(str(soup).encode('utf-8'))
     converted = markitdown.convert_stream(
-      html_stream,
-      file_extension='.html',
+        html_stream,
+        file_extension='.html',
     )
 
     page_cache.put(url, converted.text_content)
@@ -196,12 +196,12 @@ async def get_cppreference_page(
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(
-    description='cppreference MCP Server'
+      description='cppreference MCP Server'
   )
   parser.add_argument(
-    '--log-dir',
-    required=False,
-    help='Directory for log files'
+      '--log-dir',
+      required=False,
+      help='Directory for log files'
   )
   args = parser.parse_args()
 

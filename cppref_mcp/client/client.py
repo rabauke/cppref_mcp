@@ -36,7 +36,7 @@ async def get_cppreference_page(session: ClientSession,
 
 async def main() -> int:
   parser = argparse.ArgumentParser(
-    description='cppreference MCP  test client')
+      description='cppreference MCP test client')
   parser.add_argument('command',
                       help='command to execute, "search" or "get"')
   parser.add_argument('--server', required=False,
@@ -72,9 +72,9 @@ async def main() -> int:
   if args.log_dir:
     server_args.extend(['--log-dir', str(log_dir)])
   server_params = StdioServerParameters(
-    command=sys.executable,
-    args=server_args,
-    env=None
+      command=sys.executable,
+      args=server_args,
+      env=None
   )
 
   print('Connecting to MCP server...')
