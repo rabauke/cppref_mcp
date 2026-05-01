@@ -18,6 +18,7 @@ class CppReferenceMCP:
   BASE_URL = 'https://cppreference.com'
   HTTP_TIMEOUT = 10.0
   MAX_SEARCH_RESULTS = 5
+  PAGE_SIZE = 1024 * 16
 
 
   def __init__(self):
@@ -121,10 +122,12 @@ class CppReferenceMCP:
   async def get_cppreference_page(
       self,
       url: Annotated[str, 'url of a page from cppreference.com'],
+      cursor: Annotated[str | None, 'cursor for pagination'] = None,
   ) -> str:
     """
     Retrieves the specified cppreference.com page and returns it as Markdown.
     Ensures only pages from cppreference.com are retrieved.
+    Supports pagination via the cursor parameter.
     """
     url = url.strip()
 
@@ -135,48 +138,70 @@ class CppReferenceMCP:
       logging.error('Invalid URL or domain: %s', url)
       return f'Error: Only HTTPS pages from {parsed_base_url.netloc} are allowed.'
 
+    # Handle cursor
+    start_index = 0
+    if cursor:
+      try:
+        start_index = int(cursor)
+      except ValueError:
+        logging.error('Invalid cursor: %s', cursor)
+        return 'Error: Invalid cursor format. Expected an integer.'
+
     cached = self.page_cache.get(url)
     if cached:
       logging.info('Using cached results for page: %s', url)
-      return cached
+      full_content = cached
+    else:
+      logging.info('Retrieving page: %s', url)
 
-    logging.info('Retrieving page: %s', url)
+      try:
+        async with httpx.AsyncClient(
+            timeout=self.HTTP_TIMEOUT,
+            follow_redirects=True
+        ) as client:
+          response = await client.get(url)
 
-    try:
-      async with httpx.AsyncClient(
-          timeout=self.HTTP_TIMEOUT,
-          follow_redirects=True
-      ) as client:
-        response = await client.get(url)
+        if response.status_code != 200:
+          logging.error('Failed to retrieve page: %d', response.status_code)
+          return f'Error: Failed to retrieve page (Status: {response.status_code})'
 
-      if response.status_code != 200:
-        logging.error('Failed to retrieve page: %d', response.status_code)
-        return f'Error: Failed to retrieve page (Status: {response.status_code})'
+        soup = BeautifulSoup(response.text, 'html.parser')
 
-      soup = BeautifulSoup(response.text, 'html.parser')
+        for a_tag in soup.find_all('a'):
+          href = a_tag.get('href')
+          if href and (
+              href.startswith('/c/')
+              or href.startswith('/cpp/')
+              or href == '/c'
+              or href == '/cpp'
+          ):
+            a_tag['href'] = urljoin(self.BASE_URL, href)
 
-      for a_tag in soup.find_all('a'):
-        href = a_tag.get('href')
-        if href and (
-            href.startswith('/c/')
-            or href.startswith('/cpp/')
-            or href == '/c'
-            or href == '/cpp'
-        ):
-          a_tag['href'] = urljoin(self.BASE_URL, href)
+        html_stream = BytesIO(str(soup).encode('utf-8'))
+        converted = self.markitdown.convert_stream(
+            html_stream,
+            file_extension='.html',
+        )
+        full_content = converted.text_content
+        self.page_cache.put(url, full_content)
 
-      html_stream = BytesIO(str(soup).encode('utf-8'))
-      converted = self.markitdown.convert_stream(
-          html_stream,
-          file_extension='.html',
-      )
+      except Exception as exc:
+        logging.exception('Error retrieving or converting page: %s', exc)
+        return f'Error: Failed to process page: {str(exc)}'
 
-      self.page_cache.put(url, converted.text_content)
-      return converted.text_content
+    # Implement pagination
+    end_index = min(start_index + self.PAGE_SIZE, len(full_content))
+    page_content = full_content[start_index:end_index]
 
-    except Exception as exc:
-      logging.exception('Error retrieving or converting page: %s', exc)
-      return f'Error: Failed to process page: {str(exc)}'
+    next_cursor = None
+    if end_index < len(full_content):
+      next_cursor = str(end_index)
+
+    result = {
+      'content': page_content,
+      'next_cursor': next_cursor
+    }
+    return json.dumps(result)
 
 
   def run(self):
