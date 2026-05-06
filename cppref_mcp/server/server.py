@@ -47,11 +47,31 @@ class CppReferenceMCP:
   )
   async def search_cppreference(
       self,
-      query: Annotated[str, 'query string for search cppreference.com'],
+      query: Annotated[
+          str,
+          'Concise C or C++ documentation search query, such as a symbol, header, keyword, standard feature, or library facility.'
+      ],
   ) -> str:
     """
-    Searches the cppreference.com website for the specified query.
-    Returns a list of up to five URLs of pages containing the search results.
+    Search cppreference.com for C or C++ standard library, language, and
+    compiler-related documentation.
+
+    Use this tool when a developer or AI assistant needs authoritative
+    documentation for a C++ symbol, header, concept, keyword, feature-test
+    macro, language rule, library function, class template, algorithm, type
+    trait, container, iterator, utility, or standard feature.
+
+    Good queries are usually concise and cppreference-oriented, for example:
+    "std::vector", "std::ranges::sort", "constexpr", "std::optional",
+    "std::move", "template argument deduction", "operator<=>",
+    "std::filesystem::path", or "C++20 concepts".
+
+    Returns a JSON string with:
+    - "query": the normalized search query.
+    - "result_urls": up to five matching cppreference.com URLs.
+
+    After selecting the most relevant URL, call get_cppreference_page to
+    retrieve the page content as Markdown.
     """
     query = query.strip()
 
@@ -84,7 +104,7 @@ class CppReferenceMCP:
 
         if 'Special:Search' not in final_url and 'index.php' not in final_url:
           logging.info('Directly redirected to: %s', final_url)
-          result = json.dumps([final_url])
+          result = json.dumps({'query': query, 'result_urls': urls})
           self.search_cache.put(query, result)
           return result
 
@@ -121,13 +141,35 @@ class CppReferenceMCP:
   )
   async def get_cppreference_page(
       self,
-      url: Annotated[str, 'url of a page from cppreference.com'],
-      cursor: Annotated[str | None, 'cursor for pagination'] = None,
+      url: Annotated[
+          str,
+          'HTTPS URL of a cppreference.com documentation page to retrieve.'
+      ],
+      cursor: Annotated[
+          str | None,
+          'Pagination cursor returned by a previous get_cppreference_page call, or null/omitted for the first page.'
+      ] = None,
   ) -> str:
     """
-    Retrieves the specified cppreference.com page and returns it as Markdown.
-    Ensures only pages from cppreference.com are retrieved.
-    Supports pagination via the cursor parameter.
+    Retrieve a cppreference.com documentation page and return its content as
+    Markdown suitable for use by an AI coding assistant.
+
+    Use this tool after search_cppreference has returned a relevant URL, or
+    when the exact cppreference.com HTTPS URL is already known. This is
+    useful for answering C++ questions with authoritative details about
+    syntax, overloads, template parameters, constraints, feature availability,
+    examples, notes, defect reports, and standard-version differences.
+
+    Only HTTPS URLs whose domain is cppreference.com are accepted.
+
+    The response is a JSON string with:
+    - "content": a Markdown fragment of the requested page.
+    - "next_cursor": a string cursor for the next fragment, or null if the
+      full page has been returned.
+
+    Large pages are paginated. If "next_cursor" is not null, call this tool
+    again with the same URL and cursor=next_cursor to retrieve the next
+    Markdown fragment. Continue until "next_cursor" is null.
     """
     url = url.strip()
 
